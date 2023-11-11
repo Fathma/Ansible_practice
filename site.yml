@@ -4,19 +4,29 @@
   become: true
   pre_tasks: 
 
-  - name: install update "Centos"
+  - name: update repo cache "Centos"
     tags: always
     dnf: 
-      update_only: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Centos"
 
-  - name: install update "Ubuntu"
+  - name: update repo cache "Ubuntu"
     tags: always
     apt: 
-      upgrade: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution in ["Ubuntu", "Debian"] and ansible_distribution_version == "22.04"
+
+- hosts: all
+  become: true
+  pre_tasks: 
+
+  - name: add ssh key
+    tags: always
+    authorized_key: 
+      user: simone
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvvwKvvAK7Q4M2+LBd2sG2rniDwdP4HS74dH16Na2OU ansible new"
 
 - hosts: web_servers
   become: true
@@ -32,7 +42,6 @@
     when: ansible_distribution in ["Ubuntu", "Debian"] and ansible_distribution_version == "22.04"
      
   - name: cp default file for the site
-    tags: ubuntu
     copy: 
       src: default_site.html
       dest: /var/www/html/index.html
@@ -48,3 +57,33 @@
         - php
       state: latest  
     when: ansible_distribution == "Centos"
+  
+  - name: start httpd (centos)
+    tags: centos
+    service: 
+      name:  
+        - httpd
+      state: started 
+      enabled: yes 
+    when: ansible_distribution == "Centos"
+
+- hosts: workstationss
+  become: true
+  tasks: 
+
+  - name: install unzip
+    tags: ubuntu
+    package: 
+      name: 
+        - unzip
+
+  - name: install terraform
+    tags: ubuntu
+    unarchive: 
+      src: https://releases.hashicorp.com/terraform/1.6.3/terraform_1.6.3_darwin_arm64.zip
+      dest: /usr/local/bin 
+      remote_src: yes
+      mode: 0755 
+      owner: fathmasiddique
+      group: fathmasiddique
+      
